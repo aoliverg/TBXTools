@@ -66,10 +66,7 @@ class TBXTools:
         self.sl_inner_stopwords.extend(self.punctuation)
         self.tl_inner_stopwords.extend(self.punctuation)
         
-        #FREELING API
-        self.FREELINGDIR = "/usr/local";
-        self.DATA = self.FREELINGDIR+"/share/freeling/";
-
+        
     def create_project(self,project_name,sl_lang,tl_lang="null",overwrite=False):
         '''Opens a project. If the project already exists, it raises an exception. To avoid the exception use overwrite=True. To open existing projects, use the open_project method.'''
         if os.path.isfile(project_name) and not overwrite:
@@ -1284,39 +1281,38 @@ class TBXTools:
         
                 
    
-    def start_freeling_api(self,LANG):
+    def start_freeling_api(self,freelingpath, DATApath, LANG):
         
-        freelingpath='/home/aoliverg/eines/Freeling-4.0/FreeLing-4.0/APIs/python'
 
         try:
             sys.path.append(freelingpath)
-            import freeling
+            import pyfreeling
         except:
             #pass
             print("No Freeling API available. Verify Freeling PATH: "+freelingpath)
         
-        freeling.util_init_locale("default");
+        pyfreeling.util_init_locale("default");
 
         # create language analyzer
-        self.la1=freeling.lang_ident(self.DATA+"common/lang_ident/ident.dat");
+        self.la1=pyfreeling.lang_ident(DATApath+"common/lang_ident/ident.dat");
 
         # create options set for maco analyzer. Default values are Ok, except for data files.
-        self.op1= freeling.maco_options(LANG);
+        self.op1= pyfreeling.maco_options(LANG);
         self.op1.set_data_files( "", 
-                           self.DATA + "common/punct.dat",
-                           self.DATA + LANG + "/dicc.src",
-                           self.DATA + LANG + "/afixos.dat",
+                           DATApath + "common/punct.dat",
+                           DATApath+ LANG + "/dicc.src",
+                           DATApath + LANG + "/afixos.dat",
                            "",
-                           self.DATA + LANG + "/locucions.dat", 
-                           self.DATA + LANG + "/np.dat",
-                           self.DATA + LANG + "/quantities.dat",
-                           self.DATA + LANG + "/probabilitats.dat");
+                           DATApath + LANG + "/locucions.dat", 
+                           DATApath + LANG + "/np.dat",
+                           DATApath + LANG + "/quantities.dat",
+                           DATApath + LANG + "/probabilitats.dat");
 
         # create analyzers
-        self.tk1=freeling.tokenizer(self.DATA+LANG+"/tokenizer.dat");
-        self.sp1=freeling.splitter(self.DATA+LANG+"/splitter.dat");
+        self.tk1=pyfreeling.tokenizer(DATApath+LANG+"/tokenizer.dat");
+        self.sp1=pyfreeling.splitter(DATApath+LANG+"/splitter.dat");
         self.sid1=self.sp1.open_session();
-        self.mf1=freeling.maco(self.op1);
+        self.mf1=pyfreeling.maco(self.op1);
 
         # activate mmorpho odules to be used in next call
         self.mf1.set_active_options(False, True, True, False,  # select which among created 
@@ -1324,7 +1320,7 @@ class TBXTools:
                               True, False, True, True ); # default: all created submodules are used
 
         # create tagger, sense anotator, and parsers
-        self.tg1=freeling.hmm_tagger(self.DATA+LANG+"/tagger.dat",True,2);
+        self.tg1=pyfreeling.hmm_tagger(DATApath+LANG+"/tagger.dat",True,2);
         
     def tag_freeling_api(self,corpus="source"):
         with self.conn:
