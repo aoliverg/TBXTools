@@ -1234,26 +1234,29 @@ class TBXTools:
             self.source=self.camps[0].strip()
             self.trad=self.camps[1].strip()
             self.probs=self.camps[2].split(" ")
-            if not self.trad[0] in self.punctuation and not self.source[0] in self.punctuation and not self.trad[-1] in self.punctuation and not self.source[-1] in self.punctuation:
-                #Currently, four different phrase translation scores are computed:
-                #0    inverse phrase translation probability φ(f|e)
-                #1    inverse lexical weighting lex(f|e)
-                #2    direct phrase translation probability φ(e|f)
-                #3    direct lexical weighting lex(e|f)
-                #self.probtrad=float(self.probs[1])
-                self.probtrad=(float(self.probs[2])*float(self.probs[3]))
-                #print(self.source,self.trad,self.probtrad)
-                self.record=[]
-                self.record.append(self.source)
-                self.record.append(self.trad)
-                self.record.append(self.probtrad)
-                self.data.append(self.record)
-                self.continserts+=1
-                if self.continserts==self.maxinserts:
-                    self.cur.executemany("INSERT INTO index_pt (source, target, probability) VALUES (?,?,?)",self.data)
-                    self.data=[]
-                    self.continserts=0
-                    self.conn.commit()
+            try:
+                if not self.trad[0] in self.punctuation and not self.source[0] in self.punctuation and not self.trad[-1] in self.punctuation and not self.source[-1] in self.punctuation:
+                    #Currently, four different phrase translation scores are computed:
+                    #0    inverse phrase translation probability φ(f|e)
+                    #1    inverse lexical weighting lex(f|e)
+                    #2    direct phrase translation probability φ(e|f)
+                    #3    direct lexical weighting lex(e|f)
+                    #self.probtrad=float(self.probs[1])
+                    self.probtrad=(float(self.probs[2])*float(self.probs[3]))
+                    #print(self.source,self.trad,self.probtrad)
+                    self.record=[]
+                    self.record.append(self.source)
+                    self.record.append(self.trad)
+                    self.record.append(self.probtrad)
+                    self.data.append(self.record)
+                    self.continserts+=1
+                    if self.continserts==self.maxinserts:
+                        self.cur.executemany("INSERT INTO index_pt (source, target, probability) VALUES (?,?,?)",self.data)
+                        self.data=[]
+                        self.continserts=0
+                        self.conn.commit()
+            except:
+                pass
         with self.conn:
             self.cur.executemany("INSERT INTO index_pt (source, target, probability) VALUES (?,?,?)",self.data)    
         self.conn.commit()
@@ -1281,36 +1284,36 @@ class TBXTools:
         
                 
    
-    def start_freeling_api(self,freelingpath, DATApath, LANG):
+    def start_freeling_api(self,freelingpath, LANG):
         
-
+        if not freelingpath.endswith("/"):freelingpath=freelingpath+"/"
         try:
-            sys.path.append(freelingpath)
+            sys.path.append(freelingpath+"APIs/python3/")
             import pyfreeling
         except:
             #pass
-            print("No Freeling API available. Verify Freeling PATH: "+freelingpath)
+            print("No Freeling API available. Verify Freeling PATH: "+freelingpath+"freeling/APIs/python3/")
         
         pyfreeling.util_init_locale("default");
 
         # create language analyzer
-        self.la1=pyfreeling.lang_ident(DATApath+"common/lang_ident/ident.dat");
+        self.la1=pyfreeling.lang_ident(freelingpath+"common/lang_ident/ident.dat");
 
         # create options set for maco analyzer. Default values are Ok, except for data files.
         self.op1= pyfreeling.maco_options(LANG);
         self.op1.set_data_files( "", 
-                           DATApath + "common/punct.dat",
-                           DATApath+ LANG + "/dicc.src",
-                           DATApath + LANG + "/afixos.dat",
+                           freelingpath + "common/punct.dat",
+                           freelingpath+ LANG + "/dicc.src",
+                           freelingpath + LANG + "/afixos.dat",
                            "",
-                           DATApath + LANG + "/locucions.dat", 
-                           DATApath + LANG + "/np.dat",
-                           DATApath + LANG + "/quantities.dat",
-                           DATApath + LANG + "/probabilitats.dat");
+                           freelingpath + LANG + "/locucions.dat", 
+                           freelingpath + LANG + "/np.dat",
+                           freelingpath + LANG + "/quantities.dat",
+                           freelingpath + LANG + "/probabilitats.dat");
 
         # create analyzers
-        self.tk1=pyfreeling.tokenizer(DATApath+LANG+"/tokenizer.dat");
-        self.sp1=pyfreeling.splitter(DATApath+LANG+"/splitter.dat");
+        self.tk1=pyfreeling.tokenizer(freelingpath+LANG+"/tokenizer.dat");
+        self.sp1=pyfreeling.splitter(freelingpath+LANG+"/splitter.dat");
         self.sid1=self.sp1.open_session();
         self.mf1=pyfreeling.maco(self.op1);
 
@@ -1320,7 +1323,7 @@ class TBXTools:
                               True, False, True, True ); # default: all created submodules are used
 
         # create tagger, sense anotator, and parsers
-        self.tg1=pyfreeling.hmm_tagger(DATApath+LANG+"/tagger.dat",True,2);
+        self.tg1=pyfreeling.hmm_tagger(freelingpath+LANG+"/tagger.dat",True,2);
         
     def tag_freeling_api(self,corpus="source"):
         with self.conn:
