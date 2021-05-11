@@ -16,8 +16,8 @@ import math
 
 import string
 
-#version: 2020/10/06
-#Copyright: Antoni Oliver (2020) - Universitat Oberta de Catalunya - aoliverg@uoc.edu
+#version: 2021/05/1
+#    Copyright: Antoni Oliver (2021) - Universitat Oberta de Catalunya - aoliverg@uoc.edu
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -844,7 +844,7 @@ class TBXTools:
                 self.segment=self.s[0]
                 for self.n in range(nmin,nmax+2): #we calculate one order bigger in order to detect nested candidates
                     #self.ngs=ngrams(self.sl_tokenizer.tokenize(self.segment), self.n)
-                    self.ngs=ngrams(self.segment.split(" "), self.n)
+                    self.ngs=ngrams(self.segment.split(), self.n)
                     for self.ng in self.ngs:
                         self.ngrams[self.ng]+=1
                 #for self.token in self.sl_tokenizer.tokenize(self.segment):
@@ -1398,8 +1398,8 @@ class TBXTools:
             for self.s in self.cur.fetchall():
                 self.segment=self.s[0]
                 
-                for self.n in range(nmin,nmax+2): #we calculate one order bigger in order to detect nested candidates
-                    self.ngs=ngrams(self.segment.split(" "), self.n)
+                for self.n in range(nmin,nmax+1):
+                    self.ngs=ngrams(self.segment.split(), self.n)
                     for self.ng in self.ngs:
                         self.ngrams[self.ng]+=1
                         
@@ -1461,11 +1461,16 @@ class TBXTools:
     def linguistic_term_extraction(self,minfreq=2):
         '''Performs an linguistic term extraction using the extracted tagged ngrams (tagged_ngram_calculation should be executed first). '''
         self.linguistics_patterns=[]
+        self.controlpatterns=[]
         with self.conn:
             self.cur.execute("SELECT linguistic_pattern from linguistic_patterns")
             for self.lp in self.cur.fetchall():
                 self.linguistic_pattern=self.lp[0]
-                self.linguistic_patterns.append("^"+self.linguistic_pattern+"$")
+                self.transformedpattern="^"+self.linguistic_pattern+"$"
+                if not self.transformedpattern in self.controlpatterns:
+                    self.linguistic_patterns.append(self.transformedpattern)
+                    self.controlpatterns.append(self.transformedpattern)
+                    
             
         self.cur.execute("SELECT tagged_ngram, n, frequency FROM tagged_ngrams order by frequency desc")
         self.results=self.cur.fetchall()
@@ -1483,10 +1488,8 @@ class TBXTools:
             if self.include:
                 for self.pattern in self.linguistic_patterns:
                     self.match=re.search(self.pattern,self.ng)
-                    
                     if self.match:
-                        if self.match.group(0)==self.ng:
-                            
+                        if self.match.group(0)==self.ng:                            
                             self.candidate=" ".join(self.match.groups()[1:])
                             self.record=[]
                             self.record.append(self.candidate)     
@@ -1495,6 +1498,7 @@ class TBXTools:
                             self.record.append("freq")
                             self.record.append(self.frequency)   
                             self.data.append(self.record)
+                            break
                 
         with self.conn:
             #self.cur.executemany("INSERT INTO term_candidates (candidate, n, frequency) VALUES (?,?,?)",self.data)  
